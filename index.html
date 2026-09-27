@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1e1e24">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Vault">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+<title>Vault</title>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <div class="side-head">
+      <span class="brand">Vault</span>
+      <span id="net" class="net"></span>
+    </div>
+    <input id="search" type="search" placeholder="Search notes…  (⌘K)" autocomplete="off">
+    <button id="newNote" class="primary">+ New note</button>
+    <ul id="noteList"></ul>
+    <div class="side-foot">
+      <button id="exportBtn">Export .zip</button>
+      <label class="btn">Import<input id="importInput" type="file" accept=".md,.markdown,.txt,.zip,text/markdown,text/plain,application/zip" multiple hidden></label>
+      <div id="swState"></div>
+    </div>
+  </aside>
+  <div id="scrim"></div>
+  <main id="main">
+    <header id="toolbar">
+      <button id="menuBtn" class="icon" aria-label="Show notes">☰</button>
+      <input id="title" placeholder="Untitled" autocomplete="off" spellcheck="false">
+      <button id="modeBtn" title="Toggle preview (⌘E)">Preview</button>
+      <button id="deleteBtn" class="danger icon" aria-label="Delete note" title="Delete note">🗑</button>
+    </header>
+    <textarea id="editor" spellcheck="true" placeholder="Start writing…  Use [[Note name]] to link notes and #tags to label them."></textarea>
+    <article id="preview" hidden></article>
+    <section id="backlinks"><h4>Backlinks</h4><ul id="backlinkList"></ul></section>
+    <div id="empty" hidden>
+      <p>No note open.</p>
+      <p class="muted">Create one with <b>+ New note</b>.</p>
+    </div>
+  </main>
+</div>
+<div id="toast" role="status"></div>
+<script src="markdown.js"></script>
+<script src="zip.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
