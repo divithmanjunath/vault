@@ -1,0 +1,2 @@
+# vault
+obsidian_proto
