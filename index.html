@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Vault">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icons/icon-180.png">
-<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <link rel="stylesheet" href="style.css">
 <title>Vault</title>
 </head>
@@ -22,7 +22,10 @@
       <span id="net" class="net"></span>
     </div>
     <input id="search" type="search" placeholder="Search notes…  (⌘K)" autocomplete="off">
-    <button id="newNote" class="primary">+ New note</button>
+    <div class="side-actions">
+      <button id="newNote" class="primary">+ New note</button>
+      <button id="graphBtn" title="Graph view (⌘G)">◉ Graph</button>
+    </div>
     <ul id="noteList"></ul>
     <div class="side-foot">
       <button id="exportBtn">Export .zip</button>
@@ -36,11 +39,25 @@
       <button id="menuBtn" class="icon" aria-label="Show notes">☰</button>
       <input id="title" placeholder="Untitled" autocomplete="off" spellcheck="false">
       <button id="modeBtn" title="Toggle preview (⌘E)">Preview</button>
+      <button id="graphBtn2" class="icon" aria-label="Graph view" title="Graph view (⌘G)">◉</button>
       <button id="deleteBtn" class="danger icon" aria-label="Delete note" title="Delete note">🗑</button>
     </header>
     <textarea id="editor" spellcheck="true" placeholder="Start writing…  Use [[Note name]] to link notes and #tags to label them."></textarea>
     <article id="preview" hidden></article>
     <section id="backlinks"><h4>Backlinks</h4><ul id="backlinkList"></ul></section>
+    <section id="graphPane" hidden>
+      <header class="graph-bar">
+        <button id="gMenuBtn" class="icon" aria-label="Show notes">☰</button>
+        <span class="graph-title">Graph</span>
+        <label class="chip"><input type="checkbox" id="gTags"> Topics</label>
+        <label class="chip"><input type="checkbox" id="gLocal"> Local</label>
+        <button id="gFit" class="icon" aria-label="Fit to screen" title="Fit to screen">⤢</button>
+        <button id="gClose" class="icon" aria-label="Close graph" title="Close graph (Esc)">✕</button>
+      </header>
+      <canvas id="graphCanvas"></canvas>
+      <div id="gLegend"></div>
+      <div id="gStats"></div>
+    </section>
     <div id="empty" hidden>
       <p>No note open.</p>
       <p class="muted">Create one with <b>+ New note</b>.</p>
@@ -50,6 +67,7 @@
 <div id="toast" role="status"></div>
 <script src="markdown.js"></script>
 <script src="zip.js"></script>
+<script src="graph.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

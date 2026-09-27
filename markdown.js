@@ -99,7 +99,16 @@
     return out;
   }
 
-  const api = { render, esc, extractLinks };
+  // Lower-cased #tags in a note, ignoring code blocks and inline code
+  function extractTags(src) {
+    const clean = String(src).replace(/```[\s\S]*?(```|$)/g, ' ').replace(/`[^`\n]*`/g, ' ');
+    const out = new Set(), re = /(^|\s)#([A-Za-z][\w\-/]*)/g;
+    let m;
+    while ((m = re.exec(clean))) out.add(m[2].toLowerCase());
+    return [...out];
+  }
+
+  const api = { render, esc, extractLinks, extractTags };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else global.MD = api;
 })(this);

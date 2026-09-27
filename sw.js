@@ -1,14 +1,16 @@
 // Service worker: caches the app so it opens with no internet.
 // Online: fetches the latest files (so updates arrive) and refreshes the cache.
 // Offline or slow network: serves the cached copy.
-const CACHE = 'vault-v2';
-const ASSETS = [
-  './', './index.html', './style.css', './app.js', './markdown.js', './zip.js',
-  './manifest.webmanifest', './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png',
-];
+const CACHE = 'vault-v4';
+// Core files must cache for offline to work; extras are best-effort
+const CORE = ['./', './index.html', './style.css', './app.js', './markdown.js', './zip.js', './graph.js'];
+const EXTRA = ['./manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then(async c => {
+    await c.addAll(CORE);
+    await Promise.all(EXTRA.map(u => c.add(u).catch(() => {})));
+  }).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {

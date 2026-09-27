@@ -120,6 +120,35 @@ li.none { color: var(--muted); cursor: default !important; background: none !imp
 }
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
 
+/* ---- graph ---- */
+.side-actions { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+body.graph-open #toolbar, body.graph-open #editor, body.graph-open #preview,
+body.graph-open #backlinks, body.graph-open #empty { display: none !important; }
+#graphPane { flex: 1; min-height: 0; position: relative; display: flex; flex-direction: column; }
+.graph-bar {
+  display: flex; gap: 8px; align-items: center; border-bottom: 1px solid var(--border); flex-wrap: wrap;
+  padding: calc(10px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) 10px 16px;
+}
+.graph-title { font-size: 20px; font-weight: 700; margin-right: auto; padding-left: 4px; }
+#gMenuBtn { display: none; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; user-select: none;
+  background: var(--panel2); border: 1px solid var(--border); border-radius: 99px; padding: 6px 12px;
+}
+.chip input { accent-color: var(--accent); margin: 0; }
+#graphCanvas { flex: 1; min-height: 0; width: 100%; display: block; touch-action: none; cursor: grab; }
+#gLegend {
+  position: absolute; left: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); right: 12px;
+  display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none;
+}
+#gLegend button {
+  pointer-events: auto; font-size: 12px; padding: 4px 10px; border-radius: 99px;
+  background: var(--panel); display: inline-flex; align-items: center; gap: 6px;
+}
+#gLegend button i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+#gLegend button.on { border-color: var(--accent); background: var(--accent-soft); }
+#gStats { position: absolute; right: 14px; top: 70px; font-size: 12px; color: var(--muted); pointer-events: none; }
+
 /* ---- phone ---- */
 @media (max-width: 760px) {
   #app { grid-template-columns: 1fr; }
@@ -129,7 +158,17 @@ li.none { color: var(--muted); cursor: default !important; background: none !imp
   }
   body.nav-open #sidebar { transform: none; }
   body.nav-open #scrim { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 15; }
-  #menuBtn { display: inline-block; }
+  #menuBtn, #gMenuBtn { display: inline-block; }
+  .graph-bar { padding-left: calc(12px + env(safe-area-inset-left)); }
+  .graph-title { font-size: 18px; }
+  .graph-title { display: none; }
+  .graph-bar { gap: 6px; flex-wrap: nowrap; }
+  .graph-bar .chip { padding: 6px 10px; }
+  #gClose { margin-left: auto; }
+  #gStats { top: 64px; right: 12px; }
+  #gLegend { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; pointer-events: auto; }
+  #gLegend::-webkit-scrollbar { display: none; }
+  #gLegend button { flex: none; }
   #toolbar { padding-left: calc(12px + env(safe-area-inset-left)); }
   #editor, #preview { padding: 16px; }
   #backlinks { padding-left: 8px; padding-right: 8px; }

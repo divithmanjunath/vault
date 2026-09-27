@@ -10,6 +10,10 @@ Once it has been opened, the app keeps working with no internet connection.
 - Renaming a note updates every `[[link]]` that points to it
 - `#tags`. Tap one in Preview to search for it.
 - Search across titles and text (⌘K); new note (⌘J)
+- **Graph view (⌘G)**: every note is a dot and every `[[link]]` is a line. Notes are coloured by their main `#tag` topic.
+  - **Topics** shows each tag as a ◆ hub. **Local** shows only the open note and the notes within 2 links of it.
+  - Tap a topic chip to highlight that topic. Tap a dot to open the note.
+  - Drag dots to move them. Scroll or pinch to zoom, drag the background to pan, and ⤢ re-centres the graph.
 - **Export .zip** writes plain `.md` files. **Import** accepts `.md` files or a `.zip`, including an Obsidian vault zipped up.
 - An Online/Offline badge, and a "✓ Available offline" status line once caching is ready
 
@@ -18,13 +22,14 @@ Once it has been opened, the app keeps working with no internet connection.
 |---|---|
 | Electron / Capacitor shell | Browser + PWA (manifest + service worker) |
 | `.md` files in a folder | Notes in IndexedDB on the device; exported as `.md` |
-| Metadata cache | Links parsed on the fly (`MD.extractLinks`) |
+| Metadata cache | Links and tags parsed on the fly (`MD.extractLinks`, `MD.extractTags`) |
+| Graph view (PixiJS / WebGL) | `graph.js`: force-directed layout on a 2D canvas, no libraries |
 | CodeMirror editor | Plain `<textarea>` + a custom renderer (`markdown.js`) |
 | Sync | Manual: Export zip → AirDrop → Import |
 
 Files: `index.html` (layout), `style.css`, `app.js` (storage, UI, links),
-`markdown.js` (renderer), `zip.js` (zip read/write), `sw.js` (offline cache),
-`manifest.webmanifest` + `icons/` (installable app).
+`markdown.js` (renderer), `graph.js` (graph view), `zip.js` (zip read/write), `sw.js` (offline cache),
+`manifest.webmanifest` + `icon-*.png` (installable app).
 
 **Online vs offline:** `sw.js` is network-first with a 3-second timeout. When you're online,
 you always get the latest version of the app. When you're offline, or the network is slow,
@@ -58,4 +63,4 @@ If a note exists on both with different text, you choose: replace it, or keep bo
 - No automatic sync yet. That's the next milestone: Yjs/Automerge CRDT over local Wi-Fi.
 - iOS can evict web-app storage after long disuse, so export regularly.
   (The app requests persistent storage, but iOS doesn't guarantee it.)
-- No graph view, attachments, or folders yet.
+- No attachments or folders yet. The graph is fine for a few hundred notes; beyond that it would need WebGL.

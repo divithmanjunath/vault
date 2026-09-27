@@ -9,6 +9,9 @@
     editor: $('#editor'), preview: $('#preview'), backlinks: $('#backlinks'),
     backlinkList: $('#backlinkList'), empty: $('#empty'), net: $('#net'),
     scrim: $('#scrim'), toast: $('#toast'), swState: $('#swState'),
+    graphBtn: $('#graphBtn'), graphBtn2: $('#graphBtn2'), graphPane: $('#graphPane'),
+    gTags: $('#gTags'), gLocal: $('#gLocal'), gFit: $('#gFit'), gClose: $('#gClose'),
+    gMenuBtn: $('#gMenuBtn'), canvas: $('#graphCanvas'), gLegend: $('#gLegend'), gStats: $('#gStats'),
   };
 
   // ---------- storage (IndexedDB: everything stays on this device) ----------
@@ -157,6 +160,7 @@
   function openNote(id) {
     const n = notes.get(id);
     if (!n) return;
+    if (graphOpen) closeGraph();
     currentId = id;
     try { localStorage.setItem('vault:last', id); } catch (_) {}
     els.title.value = n.title;
@@ -286,6 +290,142 @@
     toast(`Imported ${added} new, ${updated} updated`);
   }
 
+
+  // ---------- graph view ----------
+  const PALETTE = ['#8b6cef', '#3dd68c', '#f5a524', '#4cc3ff', '#ff6b8b', '#e879f9', '#a3e635', '#2dd4bf'];
+  let graph = null, graphOpen = false, activeGroup = null;
+  const pref = (k, d) => { try { const v = localStorage.getItem('vault:' + k); return v === null ? d : v === '1'; } catch (_) { return d; } };
+  const setPref = (k, v) => { try { localStorage.setItem('vault:' + k, v ? '1' : '0'); } catch (_) {} };
+
+  function buildGraph() {
+    const showTags = els.gTags.checked;
+    const local = els.gLocal.checked && notes.has(currentId);
+
+    // topics = #tags, ranked by how many notes use them; top 8 get a colour
+    const noteTags = new Map(), tagCount = new Map();
+    for (const n of notes.values()) {
+      const t = MD.extractTags(n.body);
+      noteTags.set(n.id, t);
+      for (const x of t) tagCount.set(x, (tagCount.get(x) || 0) + 1);
+    }
+    const ranked = [...tagCount].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+    const colourOf = new Map(ranked.slice(0, PALETTE.length).map(([t], i) => [t, PALETTE[i]]));
+
+    const nodes = new Map(), edges = new Map(), linkAdj = new Map();
+    const addEdge = (a, b, isLink) => {
+      if (a === b) return;
+      const key = a < b ? a + '\u0001' + b : b + '\u0001' + a;
+      if (!edges.has(key)) edges.set(key, { a, b, isLink, weak: !isLink });
+      if (isLink) {
+        if (!linkAdj.has(a)) linkAdj.set(a, new Set());
+        if (!linkAdj.has(b)) linkAdj.set(b, new Set());
+        linkAdj.get(a).add(b); linkAdj.get(b).add(a);
+      }
+    };
+
+    for (const n of notes.values()) {
+      const g = noteTags.get(n.id).find(t => colourOf.has(t)) || null;
+      nodes.set(n.id, { id: n.id, label: n.title, kind: 'note', group: g, groups: noteTags.get(n.id), color: g ? colourOf.get(g) : null });
+    }
+    for (const n of notes.values()) {
+      for (const t of MD.extractLinks(n.body)) {
+        if (!t) continue;
+        const target = byTitle(t);
+        let id;
+        if (target) id = target.id;
+        else {
+          id = 'missing:' + t.toLowerCase();
+          if (!nodes.has(id)) nodes.set(id, { id, label: t, kind: 'missing', group: null, color: null });
+        }
+        addEdge(n.id, id, true);
+      }
+      if (showTags) for (const t of noteTags.get(n.id)) {
+        const id = 'tag:' + t;
+        if (!nodes.has(id)) nodes.set(id, { id, label: '#' + t, kind: 'tag', group: t, color: colourOf.get(t) || null });
+        addEdge(n.id, id, false);
+      }
+    }
+
+    let keep = null;
+    if (local) {
+      // the open note, notes within two links of it, and their topics
+      keep = new Set([currentId]);
+      let frontier = [currentId];
+      for (let depth = 0; depth < 2; depth++) {
+        const next = [];
+        for (const id of frontier) for (const m of linkAdj.get(id) || []) if (!keep.has(m)) { keep.add(m); next.push(m); }
+        frontier = next;
+      }
+      if (showTags) for (const id of [...keep]) for (const t of noteTags.get(id) || []) keep.add('tag:' + t);
+    }
+    const nodeList = [...nodes.values()].filter(n => !keep || keep.has(n.id));
+    const edgeList = [...edges.values()].filter(e => !keep || (keep.has(e.a) && keep.has(e.b)));
+    const legend = ranked.slice(0, PALETTE.length).map(([t, c]) => ({ tag: t, count: c, color: colourOf.get(t) }));
+    return { nodes: nodeList, edges: edgeList, legend, links: edgeList.filter(e => e.isLink).length };
+  }
+
+  function renderLegend(legend) {
+    els.gLegend.innerHTML = '';
+    if (activeGroup && !legend.some(l => l.tag === activeGroup)) activeGroup = null;
+    for (const l of legend) {
+      const b = document.createElement('button');
+      b.className = l.tag === activeGroup ? 'on' : '';
+      const dot = document.createElement('i'); dot.style.background = l.color;
+      b.append(dot, document.createTextNode(`#${l.tag} · ${l.count}`));
+      b.addEventListener('click', () => {
+        activeGroup = activeGroup === l.tag ? null : l.tag;
+        graph.setGroup(activeGroup);
+        renderLegend(legend);
+      });
+      els.gLegend.append(b);
+    }
+  }
+
+  function refreshGraph() {
+    const data = buildGraph();
+    graph.setData(data, currentId);
+    graph.setGroup(activeGroup);
+    renderLegend(data.legend);
+    const noteCount = data.nodes.filter(n => n.kind === 'note').length;
+    els.gStats.textContent = `${noteCount} note${noteCount === 1 ? '' : 's'} · ${data.links} link${data.links === 1 ? '' : 's'}`;
+  }
+
+  async function openGraph() {
+    await flush();
+    if (!graph) {
+      graph = Graph.create(els.canvas, {
+        onOpen: n => {
+          if (n.kind === 'note') openNote(n.id);
+          else if (n.kind === 'missing') followLink(n.label);
+          else if (n.kind === 'tag') { els.search.value = n.label; renderList(); openSidebar(); }
+        },
+      });
+      matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => graph.refreshTheme());
+    }
+    graphOpen = true;
+    document.body.classList.add('graph-open');
+    els.graphPane.hidden = false;
+    closeSidebar();
+    graph.show();
+    refreshGraph();
+  }
+
+  function closeGraph() {
+    graphOpen = false;
+    document.body.classList.remove('graph-open');
+    els.graphPane.hidden = true;
+  }
+
+  els.gTags.checked = pref('gTags', true);
+  els.gLocal.checked = pref('gLocal', false);
+  els.gTags.addEventListener('change', () => { setPref('gTags', els.gTags.checked); refreshGraph(); });
+  els.gLocal.addEventListener('change', () => { setPref('gLocal', els.gLocal.checked); refreshGraph(); graph.fit(); });
+  els.graphBtn.addEventListener('click', () => (graphOpen ? closeGraph() : openGraph()));
+  els.graphBtn2.addEventListener('click', openGraph);
+  els.gClose.addEventListener('click', closeGraph);
+  els.gFit.addEventListener('click', () => graph.fit());
+  els.gMenuBtn.addEventListener('click', () => openSidebar());
+
   // ---------- sidebar (mobile drawer) ----------
   const openSidebar = () => document.body.classList.add('nav-open');
   const closeSidebar = () => document.body.classList.remove('nav-open');
@@ -331,7 +471,9 @@
     if (k === 'e' && currentId) { e.preventDefault(); setMode(mode === 'edit' ? 'preview' : 'edit'); }
     else if (k === 'k') { e.preventDefault(); openSidebar(); els.search.focus(); els.search.select(); }
     else if (k === 'j') { e.preventDefault(); createNote(); }
+    else if (k === 'g') { e.preventDefault(); graphOpen ? closeGraph() : openGraph(); }
   });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && graphOpen) closeGraph(); });
 
   // ---------- online / offline ----------
   function updateNet() {
